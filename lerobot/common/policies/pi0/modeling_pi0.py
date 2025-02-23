@@ -240,13 +240,13 @@ class PI0Policy(PreTrainedPolicy):
         super().__init__(config)
         config.validate_features()
         self.config = config
-        self.normalize_inputs = Normalize(config.input_features, config.normalization_mapping, dataset_stats)
-        self.normalize_targets = Normalize(
-            config.output_features, config.normalization_mapping, dataset_stats
-        )
-        self.unnormalize_outputs = Unnormalize(
-            config.output_features, config.normalization_mapping, dataset_stats
-        )
+        # self.normalize_inputs = Normalize(config.input_features, config.normalization_mapping, dataset_stats)
+        # self.normalize_targets = Normalize(
+        #     config.output_features, config.normalization_mapping, dataset_stats
+        # )
+        # self.unnormalize_outputs = Unnormalize(
+        #     config.output_features, config.normalization_mapping, dataset_stats
+        # )
 
         self.language_tokenizer = AutoTokenizer.from_pretrained("google/paligemma-3b-pt-224")
         self.model = PI0FlowMatching(config)
@@ -273,7 +273,7 @@ class PI0Policy(PreTrainedPolicy):
         if self.config.adapt_to_pi_aloha:
             batch[OBS_ROBOT] = self._pi_aloha_decode_state(batch[OBS_ROBOT])
 
-        batch = self.normalize_inputs(batch)
+        #batch = self.normalize_inputs(batch)
 
         # Action queue logic for n_action_steps > 1. When the action_queue is depleted, populate it by
         # querying the policy.
@@ -306,8 +306,8 @@ class PI0Policy(PreTrainedPolicy):
             batch[OBS_ROBOT] = self._pi_aloha_decode_state(batch[OBS_ROBOT])
             batch[ACTION] = self._pi_aloha_encode_actions_inv(batch[ACTION])
 
-        batch = self.normalize_inputs(batch)
-        batch = self.normalize_targets(batch)
+        #batch = self.normalize_inputs(batch)
+        #batch = self.normalize_targets(batch)
 
         images, img_masks = self.prepare_images(batch)
         state = self.prepare_state(batch)
