@@ -612,6 +612,7 @@ class PI0FlowMatching(nn.Module):
         self, images, img_masks, lang_tokens, lang_masks, state, actions, noise=None, time=None
     ) -> Tensor:
         """Do a full training forward pass and compute the loss (batch_size x num_steps x num_motors)"""
+        print("Forward through Pi0")
         if noise is None:
             noise = self.sample_noise(actions.shape, actions.device)
 
@@ -633,6 +634,7 @@ class PI0FlowMatching(nn.Module):
         att_2d_masks = make_att_2d_masks(pad_masks, att_masks)
         position_ids = torch.cumsum(pad_masks, dim=1) - 1
 
+        print("About to go through paligemma")
         (_, suffix_out), _ = self.paligemma_with_expert.forward(
             attention_mask=att_2d_masks,
             position_ids=position_ids,
@@ -644,6 +646,7 @@ class PI0FlowMatching(nn.Module):
         suffix_out = suffix_out[:, -self.config.n_action_steps :]
         # Original openpi code, upcast attention output
         suffix_out = suffix_out.to(dtype=torch.float32)
+        print("About to go through action_out_proj")
         v_t = self.action_out_proj(suffix_out)
 
         losses = F.mse_loss(u_t, v_t, reduction="none")
