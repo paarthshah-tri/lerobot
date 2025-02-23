@@ -309,10 +309,15 @@ class PI0Policy(PreTrainedPolicy):
         #batch = self.normalize_inputs(batch)
         #batch = self.normalize_targets(batch)
 
+        print("About to prepare images")
         images, img_masks = self.prepare_images(batch)
+        print("Prepared images")
         state = self.prepare_state(batch)
+        print("Prepared state")
         lang_tokens, lang_masks = self.prepare_language(batch)
+        print("Prepared Language")
         actions = self.prepare_action(batch)
+        print("Prepared Actions")
         actions_is_pad = batch.get("actions_id_pad")
 
         loss_dict = {}
