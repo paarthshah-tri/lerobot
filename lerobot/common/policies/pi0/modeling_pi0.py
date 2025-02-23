@@ -520,6 +520,7 @@ class PI0FlowMatching(nn.Module):
             img_mask,
         ) in zip(images, img_masks, strict=False):
             img_emb = self.paligemma_with_expert.embed_image(img)
+            print("About to embed prefix")
             img_emb = img_emb.to(dtype=torch.bfloat16)
 
             # Normalize image embeddings
@@ -536,7 +537,7 @@ class PI0FlowMatching(nn.Module):
             att_masks += [0] * num_img_embs
 
         lang_emb = self.paligemma_with_expert.embed_language_tokens(lang_tokens)
-
+        print("Finished paligemma forward in embed_prefix")
         # Normalize language embeddings
         lang_emb_dim = lang_emb.shape[-1]
         lang_emb = lang_emb * math.sqrt(lang_emb_dim)
@@ -582,6 +583,7 @@ class PI0FlowMatching(nn.Module):
         time_emb = time_emb.type(dtype=dtype)
 
         # Fuse timestep + action information using an MLP
+        print("About to project in embed_suffix")
         action_emb = self.action_in_proj(noisy_actions)
 
         time_emb = time_emb[:, None, :].expand_as(action_emb)
