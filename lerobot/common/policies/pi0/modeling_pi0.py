@@ -363,8 +363,8 @@ class PI0Policy(PreTrainedPolicy):
             if self.config.resize_imgs_with_padding is not None:
                 img = resize_with_pad(img, *self.config.resize_imgs_with_padding, pad_value=0)
 
-            # Normalize from range [0,1] to [-1,1] as expacted by siglip
-            img = img * 2.0 - 1.0
+            # Normalize from range [0,255] (What we get from out repo) to [-1,1] as expacted by siglip
+            img = (img / 255.0) * 2.0 - 1.0
 
             bsize = img.shape[0]
             device = img.device
