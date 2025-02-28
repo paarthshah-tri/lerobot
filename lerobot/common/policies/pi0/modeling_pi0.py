@@ -283,8 +283,9 @@ class PI0Policy(PreTrainedPolicy):
         )
 
         # Unpad actions
-        original_action_dim = self.config.action_feature.shape[0]
-        actions = actions[:, :, :original_action_dim]
+        # Remove for now since we do this on the lbm side
+        # original_action_dim = self.config.action_feature.shape[0]
+        # actions = actions[:, :, :original_action_dim]
 
         #actions = self.unnormalize_outputs({"action": actions})["action"]
 
