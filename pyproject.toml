@@ -46,7 +46,7 @@ dependencies = [
     "jsonlines>=4.0.0",
     "numba<0.58.0",
     "omegaconf>=2.3.0",
-    "opencv-python>=4.9.0",
+    "opencv-python==4.5.4.60",
     "pyav>=12.0.5",
     "pymunk>=6.6.0",
     "rerun-sdk>=0.21.0",
