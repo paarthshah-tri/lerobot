@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 # Copyright 2025 Physical Intelligence and The HuggingFace Inc. team. All rights reserved.
@@ -240,13 +241,13 @@ class PI0Policy(PreTrainedPolicy):
         super().__init__(config)
         config.validate_features()
         self.config = config
-        self.normalize_inputs = Normalize(config.input_features, config.normalization_mapping, dataset_stats)
-        self.normalize_targets = Normalize(
-            config.output_features, config.normalization_mapping, dataset_stats
-        )
-        self.unnormalize_outputs = Unnormalize(
-            config.output_features, config.normalization_mapping, dataset_stats
-        )
+        # self.normalize_inputs = Normalize(config.input_features, config.normalization_mapping, dataset_stats)
+        # self.normalize_targets = Normalize(
+        #     config.output_features, config.normalization_mapping, dataset_stats
+        # )
+        # self.unnormalize_outputs = Unnormalize(
+        #     config.output_features, config.normalization_mapping, dataset_stats
+        # )
 
         self.language_tokenizer = AutoTokenizer.from_pretrained("google/paligemma-3b-pt-224")
         self.model = PI0FlowMatching(config)
@@ -273,32 +274,30 @@ class PI0Policy(PreTrainedPolicy):
         if self.config.adapt_to_pi_aloha:
             batch[OBS_ROBOT] = self._pi_aloha_decode_state(batch[OBS_ROBOT])
 
-        batch = self.normalize_inputs(batch)
+        #batch = self.normalize_inputs(batch)
+        images, img_masks = self.prepare_images(batch)
+        state = self.prepare_state(batch)
+        lang_tokens, lang_masks = self.prepare_language(batch)
 
-        # Action queue logic for n_action_steps > 1. When the action_queue is depleted, populate it by
-        # querying the policy.
-        if len(self._action_queue) == 0:
-            images, img_masks = self.prepare_images(batch)
-            state = self.prepare_state(batch)
-            lang_tokens, lang_masks = self.prepare_language(batch)
+        actions = self.model.sample_actions(
+            images, img_masks, lang_tokens, lang_masks, state, noise=noise
+        )
 
-            actions = self.model.sample_actions(
-                images, img_masks, lang_tokens, lang_masks, state, noise=noise
-            )
+        # Unpad actions
+        # Remove for now since we do this on the lbm side
+        # original_action_dim = self.config.action_feature.shape[0]
+        # actions = actions[:, :, :original_action_dim]
 
-            # Unpad actions
-            original_action_dim = self.config.action_feature.shape[0]
-            actions = actions[:, :, :original_action_dim]
+        #actions = self.unnormalize_outputs({"action": actions})["action"]
 
-            actions = self.unnormalize_outputs({"action": actions})["action"]
+        # if self.config.adapt_to_pi_aloha:
+        #     actions = self._pi_aloha_encode_actions(actions)
 
-            if self.config.adapt_to_pi_aloha:
-                actions = self._pi_aloha_encode_actions(actions)
-
-            # `self.model.forward` returns a (batch_size, n_action_steps, action_dim) tensor, but the queue
-            # effectively has shape (n_action_steps, batch_size, *), hence the transpose.
-            self._action_queue.extend(actions.transpose(0, 1))
-        return self._action_queue.popleft()
+        # `self.model.forward` returns a (batch_size, n_action_steps, action_dim) tensor, but the queue
+        # effectively has shape (n_action_steps, batch_size, *), hence the transpose.
+        # self._action_queue.extend(actions.transpose(0, 1))
+        
+        return actions
 
     def forward(self, batch: dict[str, Tensor], noise=None, time=None) -> tuple[Tensor, dict[str, Tensor]]:
         """Do a full training forward pass to compute the loss"""
@@ -306,14 +305,14 @@ class PI0Policy(PreTrainedPolicy):
             batch[OBS_ROBOT] = self._pi_aloha_decode_state(batch[OBS_ROBOT])
             batch[ACTION] = self._pi_aloha_encode_actions_inv(batch[ACTION])
 
-        batch = self.normalize_inputs(batch)
-        batch = self.normalize_targets(batch)
+        #batch = self.normalize_inputs(batch)
+        #batch = self.normalize_targets(batch)
 
         images, img_masks = self.prepare_images(batch)
         state = self.prepare_state(batch)
         lang_tokens, lang_masks = self.prepare_language(batch)
         actions = self.prepare_action(batch)
-        actions_is_pad = batch.get("actions_is_pad")
+        actions_is_pad = batch.get("actions_id_pad")
 
         loss_dict = {}
         losses = self.model.forward(images, img_masks, lang_tokens, lang_masks, state, actions, noise, time)
@@ -354,11 +353,11 @@ class PI0Policy(PreTrainedPolicy):
         for key in present_img_keys:
             img = batch[key]
 
-            if self.config.resize_imgs_with_padding is not None:
-                img = resize_with_pad(img, *self.config.resize_imgs_with_padding, pad_value=0)
+            # if self.config.resize_imgs_with_padding is not None:
+            #     img = resize_with_pad(img, *self.config.resize_imgs_with_padding, pad_value=0)
 
-            # Normalize from range [0,1] to [-1,1] as expacted by siglip
-            img = img * 2.0 - 1.0
+            # Normalize from range [0,255] (What we get from out repo) to [-1,1] as expacted by siglip
+            # img = (img / 255.0) * 2.0 - 1.0
 
             bsize = img.shape[0]
             device = img.device
@@ -536,7 +535,6 @@ class PI0FlowMatching(nn.Module):
             att_masks += [0] * num_img_embs
 
         lang_emb = self.paligemma_with_expert.embed_language_tokens(lang_tokens)
-
         # Normalize language embeddings
         lang_emb_dim = lang_emb.shape[-1]
         lang_emb = lang_emb * math.sqrt(lang_emb_dim)
