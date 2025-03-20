@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-import logging
-=======
 # Copyright 2024 The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +12,6 @@ import logging
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
->>>>>>> 5e947380 (refactor(config): Move device & amp args to PreTrainedConfig (#812))
 from dataclasses import dataclass
 from pathlib import Path
 
