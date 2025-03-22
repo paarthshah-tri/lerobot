@@ -110,7 +110,7 @@ class PreTrainedPolicy(nn.Module, HubMixin, abc.ABC):
         if os.path.isdir(model_id):
             print("Loading weights from local directory")
             model_file = os.path.join(model_id, SAFETENSORS_SINGLE_FILE)
-            policy = cls._load_as_safetensor(instance, model_file, config.device, strict)
+            policy = cls._load_as_safetensor(instance, model_file, 'cpu', strict)
         else:
             try:
                 model_file = hf_hub_download(
@@ -124,14 +124,14 @@ class PreTrainedPolicy(nn.Module, HubMixin, abc.ABC):
                     token=token,
                     local_files_only=local_files_only,
                 )
-                policy = cls._load_as_safetensor(instance, model_file, config.device, strict)
+                policy = cls._load_as_safetensor(instance, model_file, 'cpu', strict)
             except HfHubHTTPError as e:
                 raise FileNotFoundError(
                     f"{SAFETENSORS_SINGLE_FILE} not found on the HuggingFace Hub in {model_id}"
                 ) from e
 
         policy.to(config.device)
-        policy.eval()
+        #policy.eval()
         return policy
 
     @classmethod
