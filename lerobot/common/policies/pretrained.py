@@ -117,7 +117,7 @@ class PreTrainedPolicy(nn.Module, HubMixin, abc.ABC):
                     f"{SAFETENSORS_SINGLE_FILE} not found on the HuggingFace Hub in {model_id}"
                 ) from e
 
-        policy.to(config.device)
+        #policy.to(config.device)
         policy.eval()
         return policy
 
